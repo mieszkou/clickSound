@@ -6,6 +6,7 @@
 #include <StringConstants.au3>
 #include <TrayConstants.au3> ; Required for the $TRAY_ICONSTATE_SHOW constant.
 
+Local $hDLL = DllOpen("user32.dll")
 
 ; Tray menu
 
@@ -52,7 +53,7 @@ _DSnd_BufferUnLock($oDS_Buffer, $aLock)
 
 While True
     ; 01 - left mouse click
-	If _IsPressedEx('01') Then
+	If _IsPressed('01', $hDLL) Then
 		_DSnd_BufferPlay($oDS_Buffer) ;Loop Buffer
 		Sleep(100)
 	EndIf
@@ -69,6 +70,8 @@ While True
 					_Exit()
 		EndSwitch
 WEnd
+
+DllClose($hDLL)
 
 Func _IsPressedEx($hexKey)
     Local $iKey = Dec($hexKey)
@@ -95,6 +98,7 @@ Func OnAutoItExit()
 	$oDS_Buffer.Stop()
 $oDS_Buffer = 0
 $oDS = 0
+DllClose($hDLL)
 EndFunc   ;==>OnAutoItExit
 
 
