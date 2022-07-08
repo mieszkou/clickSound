@@ -5,14 +5,14 @@
 #include <MsgBoxConstants.au3>
 #include <StringConstants.au3>
 #include <TrayConstants.au3> ; Required for the $TRAY_ICONSTATE_SHOW constant.
-
-Local $hDLL = DllOpen("user32.dll")
+#include <GUIConstantsEx.au3>
+#include "MouseOnEvent.au3"
 
 ; Tray menu
 
 Opt("TrayMenuMode",3)
 
-Local $id1 = 		 TrayCreateItem("clickSound 0.0.2")
+Local $id1 = 		 TrayCreateItem("clickSound 0.0.3 (_MouseSetOnEvent)")
 Local $idSep1 =	 TrayCreateItem("") ; Create a separator line.
 Local $idAbout = TrayCreateItem("O clickSound ...")
 Local $idWww =  TrayCreateItem("Otwórz pajcomp.pl")
@@ -22,6 +22,10 @@ Local $idExit =    TrayCreateItem("Wyjście")
 TrayItemSetState($id1, $TRAY_DISABLE)
 TraySetToolTip ( "clickSound" )
 TraySetState($TRAY_ICONSTATE_SHOW) ; Show the tray menu.
+
+
+Global $iPrimaryUpEvent = 0, $iPrimaryDownEvent = 0
+
 
 ; Ustawienie generowanego dzwieku
 
@@ -51,11 +55,26 @@ _DSnd_BufferUnLock($oDS_Buffer, $aLock)
 
 ; Main loop
 
+;  _MouseSetOnEvent($MOUSE_PRIMARYDOWN_EVENT, "_MousePrimaryDown_Event")
+
+_MouseSetOnEvent($MOUSE_PRIMARYUP_EVENT, "PRIMARYUP_EVENT")
+_MouseSetOnEvent($MOUSE_PRIMARYDOWN_EVENT, "PRIMARYDOWN_EVENT")
+
 While True
     ; 01 - left mouse click
-	If _IsPressed('01', $hDLL) Then
+	;If _IsPressed('01', $hDLL) Then
+	;	_DSnd_BufferPlay($oDS_Buffer) ;Loop Buffer
+	;	Sleep(100)
+	;EndIf
+	
+	If $iPrimaryUpEvent Then
+		$iPrimaryUpEvent = 0
+	EndIf
+	
+	If $iPrimaryDownEvent Then
+		$iPrimaryDownEvent = 0
 		_DSnd_BufferPlay($oDS_Buffer) ;Loop Buffer
-		Sleep(100)
+		;Sleep(100)
 	EndIf
 	
 	Switch TrayGetMsg()
@@ -73,23 +92,16 @@ WEnd
 
 DllClose($hDLL)
 
-Func _IsPressedEx($hexKey)
-    Local $iKey = Dec($hexKey)
-    If $iKey > 255 Or $iKey < 0 Then Return SetError(1,0,0)
-    Local $aR = DllCall($u32dll, "int", "GetAsyncKeyState", "int",'0x' & $hexKey)
-    If @error Then Return SetError(2,0,0)
-    If $aKeyStillPressed[$iKey] Then ;If the key was already registered as pressed
-        If BitAND($aR[0], 0x8000) <> 0x8000 Then $aKeyStillPressed[$iKey] = False ;Check if it is still pressed and update if needed
-        Return 0 ;do nothing
-    ElseIf BitAND($aR[0], 0x8000) = 0x8000 Then ;If the key wasn't registered as pressed, but is pressed now it must be a new keypress
-        $aKeyStillPressed[$iKey] = True ;Update the pressed status
-        Return 1
-    EndIf
-    Return 0
+
+Func PRIMARYDOWN_EVENT()
+	$iPrimaryDownEvent = 1
+EndFunc
+
+Func PRIMARYUP_EVENT()
+		;$iPrimaryDownEvent = 0
 EndFunc
 
 Func _Exit()
-    DllClose($u32dll)
     Exit
 EndFunc
 
@@ -98,7 +110,6 @@ Func OnAutoItExit()
 	$oDS_Buffer.Stop()
 $oDS_Buffer = 0
 $oDS = 0
-DllClose($hDLL)
 EndFunc   ;==>OnAutoItExit
 
 
